@@ -1,42 +1,30 @@
 import streamlit as st
 import pandas as pd
 
-st.title("📊 AI产品系统（公开版）")
+st.title("V4智能选品系统")
 
-file = st.file_uploader("上传Excel文件", type=["xlsx"])
+st.write("📂 上传Excel文件（必须包含：标题 / 链接 / 时间）")
 
-def score(row):
-    title = str(row.get("标题", ""))
-    demand = float(row.get("想要数", 0))
-    exam = str(row.get("考试时间", ""))
+uploaded_file = st.file_uploader("选择Excel文件", type=["xlsx", "xls"])
 
-    s = 0
+if uploaded_file:
+    try:
+        df = pd.read_excel(uploaded_file)
 
-    # 需求权重
-    s += min(demand / 50, 6)
+        st.subheader("📊 原始数据预览")
+        st.dataframe(df)
 
-    # 热词加权
-    if "真题" in title:
-        s += 3
-    if "押题" in title:
-        s += 4
-    if "2026" in title:
-        s += 2
-    if "教材" in title:
-        s += 2
-    if "事业单位" in title:
-        s += 2
+        # 自动检查列
+        required_cols = ["标题", "链接", "时间"]
+        missing = [col for col in required_cols if col not in df.columns]
 
-    # 时间权重
-    if "秋季" in exam:
-        s += 2
+        if missing:
+            st.error(f"缺少列：{missing}，请检查Excel表头")
+        else:
+            df = df.sort_values(by="时间", ascending=False)
 
-    return s
+            st.subheader("🔥 按时间排序结果")
+            st.dataframe(df)
 
-if file:
-    df = pd.read_excel(file)
-
-    df["评分"] = df.apply(score, axis=1)
-
-    st.write("### 结果")
-    st.dataframe(df.sort_values("评分", ascending=False))
+    except Exception as e:
+        st.error(f"读取失败：{e}")
